@@ -8,12 +8,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useWallets } from "@privy-io/react-auth";
 import { UserPill } from "@privy-io/react-auth/ui";
+import { useFundWallet } from "@privy-io/react-auth";
+import { mainnet } from "viem/chains";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, logout, isLoading } = useAuth();
   const { wallets } = useWallets();
   const [copySuccess, setCopySuccess] = useState("");
+  const { fundWallet } = useFundWallet();
 
   if (isLoading) {
     return (
@@ -22,6 +25,29 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const OnClickFundWallet = async () => {
+    // Error if user does not have a wallet
+    if (!user?.wallet?.address) {
+      console.error("Wallet does not exist.");
+      return;
+    }
+
+    // Get details about the current user's on-ramp flow
+
+    try {
+      const walletAddress = user?.wallet?.address;
+      await fundWallet(walletAddress, {
+        chain: mainnet,
+        card: {
+          preferredProvider: "moonpay",
+        },
+      });
+      console.log("Funding process started!");
+    } catch (error) {
+      console.error("Error funding wallet:", error);
+    }
+  };
 
   if (!user) {
     router.push("/");
@@ -66,6 +92,14 @@ export default function ProfilePage() {
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
+                <div className="flex flex-col items-start gap-2 py-2">
+                  <button
+                    onClick={OnClickFundWallet}
+                    className="rounded-md border-none bg-violet-600 px-4 py-2 text-sm text-white transition-all hover:bg-violet-700"
+                  >
+                    Fund embedded wallet
+                  </button>
+                </div>
               </div>
               {copySuccess && (
                 <p className="text-green-500 text-xs mt-1">{copySuccess}</p>

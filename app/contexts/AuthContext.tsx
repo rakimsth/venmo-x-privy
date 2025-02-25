@@ -1,34 +1,36 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
-import { usePrivy, PrivyProvider } from "@privy-io/react-auth"
+import type React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { usePrivy, PrivyProvider } from "@privy-io/react-auth";
 
 type AuthContextType = {
-  isLoading: boolean
-  isLoggedIn: boolean
-  login: () => void
-  logout: () => void
+  isLoading: boolean;
+  isLoggedIn: boolean;
+  login: () => void;
+  logout: () => void;
   user: {
-    id: string
+    id: string;
     wallet?: {
-      address: string
-    }
-  } | null
-}
+      address: string;
+    };
+  } | null;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { ready, authenticated, user, login, logout } = usePrivy()
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { ready, authenticated, user, login, logout } = usePrivy();
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (ready) {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [ready])
+  }, [ready]);
 
   const authContextValue: AuthContextType = {
     isLoading,
@@ -41,20 +43,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           wallet: user.wallet ? { address: user.wallet.address } : undefined,
         }
       : null,
-  }
+  };
 
-  return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>
-}
+  return (
+    <AuthContext.Provider value={authContextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
-}
+  return context;
+};
 
-export const PrivyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const PrivyAuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   return (
     <PrivyProvider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
@@ -64,10 +72,16 @@ export const PrivyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           theme: "light",
           accentColor: "#4169E1",
         },
+        fundingMethodConfig: {
+          moonpay: {
+            paymentMethod: "credit_debit_card", // Purchase with credit or debit card
+            uiConfig: { accentColor: "#696FFD", theme: "light" },
+            useSandbox: true,
+          },
+        },
       }}
     >
       <AuthProvider>{children}</AuthProvider>
     </PrivyProvider>
-  )
-}
-
+  );
+};

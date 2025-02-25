@@ -3,11 +3,10 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { PrivyAuthProvider } from "./contexts/AuthContext";
-
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VenmoXPrivy",
+  title: "PrivyPay",
   description: "Your Wallet's Best Friend",
 };
 

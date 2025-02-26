@@ -13,21 +13,31 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { DollarSign } from "lucide-react";
-import { useWallets, usePrivy } from "@privy-io/react-auth";
+import { useWallets, usePrivy, useFundWallet } from "@privy-io/react-auth";
 import { BottomNavigation } from "@/components/BottomNavigation";
+
+import { tokens } from "../constants/card";
 
 export default function CardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const { wallets } = useWallets();
   const router = useRouter();
   const [amount, setAmount] = useState("");
+  const [selectedToken, setSelectedToken] = useState(tokens[0]);
   const [isFunding, setIsFunding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { fundWallet } = useFundWallet();
   const { ready } = usePrivy();
-  const { createTransaction } = usePrivy();
 
   const handleFundWallet = useCallback(async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -45,23 +55,22 @@ export default function CardPage() {
         throw new Error("No embedded wallet found");
       }
 
-      const txn = await createTransaction({
-        chainId: 1, // Ethereum mainnet
-        to: embeddedWallet.address,
-        value: (Number(amount) * 1e18).toString(), // Convert to wei
+      await fundWallet(embeddedWallet.address, {
+        chain: selectedToken.chain,
+        amount,
+        asset: "USDC",
+        card: {
+          preferredProvider: "moonpay",
+        },
+        defaultFundingMethod: "card",
       });
-
-      await txn.wait();
-
-      setAmount("");
-      alert("Wallet funded successfully!");
     } catch (error) {
       console.error("Error funding wallet:", error);
-      setError("Failed to fund wallet. Please try again.");
+      setError("Failed to initiate funding. Please try again.");
     } finally {
       setIsFunding(false);
     }
-  }, [amount, wallets, createTransaction]);
+  }, [amount, wallets, fundWallet, selectedToken]);
 
   if (isAuthLoading) {
     return (
@@ -93,11 +102,30 @@ export default function CardPage() {
           <CardContent>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount (ETH)</Label>
+                <Label htmlFor="token">Select Token</Label>
+                <Select
+                  onValueChange={(value) =>
+                    setSelectedToken(tokens.find((t) => t.symbol === value) || tokens[0])
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a token" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tokens.map((token) => (
+                      <SelectItem key={token.symbol} value={token.symbol}>
+                        {token.name} ({token.symbol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
                 <Input
                   id="amount"
                   type="number"
-                  placeholder="0.1"
+                  placeholder="10"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
@@ -114,7 +142,7 @@ export default function CardPage() {
             <Button
               className="w-full bg-[#4169E1] hover:bg-[#3158D3]"
               onClick={handleFundWallet}
-              disabled={isFunding}
+              disabled={isFunding || !ready}
             >
               {isFunding ? (
                 <>
@@ -123,7 +151,7 @@ export default function CardPage() {
                 </>
               ) : (
                 <>
-                  <DollarSign className="mr-2 h-4 w-4" /> Fund Wallet
+                  <DollarSign className="mr-2 h-4 w-4" /> Fund Wallet with {selectedToken.symbol}
                 </>
               )}
             </Button>

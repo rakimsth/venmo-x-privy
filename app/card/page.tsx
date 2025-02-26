@@ -97,7 +97,7 @@ export default function CardPage() {
         <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Fund Your Wallet</CardTitle>
-            <CardDescription>Add funds to your SwiftPay wallet using MoonPay</CardDescription>
+            <CardDescription>Add funds to your PrivyPay wallet using MoonPay</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

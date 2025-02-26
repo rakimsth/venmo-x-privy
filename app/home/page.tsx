@@ -74,7 +74,7 @@ export default function HomePage() {
 
         {/* Welcome Text */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold mb-1">Welcome to Swift Pay!</h1>
+          <h1 className="text-2xl font-semibold mb-1">Welcome to Privy Pay!</h1>
           <p className="text-gray-500">What would you like to do first?</p>
         </div>
 
@@ -102,7 +102,7 @@ export default function HomePage() {
                         variant="outline"
                         className="rounded-full border-current text-current hover:bg-current hover:bg-opacity-10"
                         style={{ borderColor: card.color, color: card.color }}
-                        onClick={card.action}
+                        onClick={() => card.action(router)}
                       >
                         {card.buttonText}
                       </Button>

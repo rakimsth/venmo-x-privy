@@ -126,7 +126,7 @@ export default function SearchPage() {
             placeholder="Search People, Business, & Charities"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+            onKeyUp={(e) => e.key === "Enter" && handleSearch()}
           />
           <Button
             variant="ghost"

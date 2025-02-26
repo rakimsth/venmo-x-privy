@@ -1,31 +1,36 @@
 "use client";
 
+import { useState, type KeyboardEvent } from "react";
 import { Search, QrCode } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "../contexts/AuthContext";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
-import { useCallback } from "react";
 import { BottomNavigation } from "@/components/BottomNavigation";
-
 import { cards } from "../constants/home";
 
 export default function HomePage() {
-  const { isLoggedIn, isLoading } = useAuth();
-  const [emblaRef, emblaApi] = useEmblaCarousel({
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const [emblaRef] = useEmblaCarousel({
     align: "center",
     containScroll: "trimSnaps",
   });
+  const [searchQuery, setSearchQuery] = useState("");
 
-  useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
-  useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -35,13 +40,14 @@ export default function HomePage() {
     );
   }
 
-  if (!isLoggedIn) {
-    redirect("/");
+  if (!user) {
+    router.push("/");
+    return null;
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Status Bar - For demo purposes */}
+      {/* Status Bar */}
       <div className="h-8 bg-white"></div>
 
       {/* Main Content */}
@@ -51,12 +57,16 @@ export default function HomePage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             className="pl-10 pr-10 py-6 bg-white rounded-full"
-            placeholder="People, Business, & Charities"
+            placeholder="Search People, Business, & Charities"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyUp={handleKeyPress}
           />
           <Button
             variant="ghost"
             size="icon"
             className="absolute right-2 top-1/2 transform -translate-y-1/2"
+            onClick={handleSearch}
           >
             <QrCode className="h-5 w-5 text-gray-400" />
           </Button>
@@ -64,7 +74,7 @@ export default function HomePage() {
 
         {/* Welcome Text */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold mb-1">Welcome to PrivyPay!</h1>
+          <h1 className="text-2xl font-semibold mb-1">Welcome to Swift Pay!</h1>
           <p className="text-gray-500">What would you like to do first?</p>
         </div>
 
@@ -104,6 +114,8 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
   );

@@ -50,7 +50,13 @@ export default function FriendsPage() {
   }, [user]);
 
   const handleSendMoney = (friend: Friend) => {
-    router.push(`/transfers?recipient=${encodeURIComponent(friend.walletAddress)}`);
+    if (friend.walletAddress) {
+      router.push(`/transfers?recipient=${encodeURIComponent(friend.walletAddress)}`);
+    } else {
+      toast.error("Cannot send money", {
+        description: "Friend's wallet address is not available.",
+      });
+    }
   };
 
   if (isLoading) {
@@ -100,7 +106,7 @@ export default function FriendsPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-center text-gray-500">You haven&apos;t added any friends yet.</p>
+              <p className="text-center text-gray-500">You haven't added any friends yet.</p>
             )}
           </CardContent>
         </Card>

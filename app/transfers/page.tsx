@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy, useWallets, useSendTransaction } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
@@ -76,11 +76,27 @@ export default function TransfersPage() {
   const router = useRouter();
   const { user } = usePrivy();
   const { wallets } = useWallets();
-  const [recipient, setRecipient] = useState("");
+  const [recipient, setRecipient] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("recipient") || "";
+    }
+    return "";
+  });
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState(tokens[0]);
 
   const { sendTransaction, isSending } = useSendTransaction();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const recipientFromURL = params.get("recipient");
+      if (recipientFromURL) {
+        setRecipient(recipientFromURL);
+      }
+    }
+  }, []);
 
   const handleTransfer = async () => {
     if (!user || !wallets.length) {
@@ -117,6 +133,7 @@ export default function TransfersPage() {
           chainId: selectedToken.chainId,
         });
       }
+
       toast.success("Transfer initiated", {
         description: `Transaction hash: ${txHash.hash}`,
       });

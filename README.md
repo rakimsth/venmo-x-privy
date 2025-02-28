@@ -2,6 +2,12 @@
 
 PrivyPay is a modern, user-friendly cryptocurrency wallet and stablecoin payment application built with Next.js, React, and integrated with blockchain technologies (Privy). It offers a seamless experience for managing digital assets, sending and receiving payments, and connecting with friends.
 
+# Motivation
+
+This project was initiated in response to the Global Hackathon organized by Encode and the Celestia Foundation. The theme was to create Stablecoin-Powered Payment App powered by Privy.
+
+Build a Venmo-style app where users can send and receive payments in USDC, leveraging Privy wallets to manage stablecoins seamlessly. The app could also use Bridge’s API to allow users to easily convert fiat USD into USDC, enabling on-chain transactions without complex wallet setup or external exchanges.
+
 ## Features
 
 ### 1. User Authentication
@@ -127,3 +133,9 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Future Plans
+
+1. To work on QR Scanner that detects the privy wallet and only works with privy wallet by checking clientType.
+
+2. Add AI feature to track the expenses to support tax calculation.

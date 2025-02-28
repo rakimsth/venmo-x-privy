@@ -25,7 +25,7 @@ import { DollarSign } from "lucide-react";
 import { useWallets, usePrivy, useFundWallet } from "@privy-io/react-auth";
 import { BottomNavigation } from "@/components/BottomNavigation";
 
-import { tokens } from "../constants/card";
+import { tokens } from "@/constants/card";
 
 export default function CardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();

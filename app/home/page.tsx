@@ -9,7 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { cards } from "../constants/home";
+import { cards } from "@/constants/home";
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();

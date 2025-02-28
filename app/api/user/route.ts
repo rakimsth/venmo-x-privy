@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-import Invite from "@/models/Invite";
 
 export async function POST(req: Request) {
   await dbConnect();
@@ -9,41 +8,32 @@ export async function POST(req: Request) {
   const { email, fullName, privyWalletAddress } = await req.json();
 
   try {
-    // Check if there's a pending invite for this email
-    const invite = await Invite.findOne({ email, status: "pending" });
-
+    // Find or create the user
     let user = await User.findOne({ email });
-
     if (!user) {
-      // Create new user
-      user = new User({
-        email,
-        fullName,
-        privyWalletAddress,
-      });
+      user = new User({ email, fullName, privyWalletAddress });
     } else {
-      // Update existing user
       user.fullName = fullName;
       user.privyWalletAddress = privyWalletAddress;
     }
 
-    if (invite) {
-      // Update invite status
-      invite.status = "accepted";
-      invite.user = user._id;
-      await invite.save();
-
-      // Link invite to user
-      user.invite = invite._id;
+    // Check for pending invites and accept them
+    const inviters = await User.find({ "invites.email": email, "invites.status": "pending" });
+    for (const inviter of inviters) {
+      const invite = inviter.invites.find((inv) => inv.email === email && inv.status === "pending");
+      if (invite) {
+        invite.status = "accepted";
+        inviter.friends.push(user._id);
+        user.friends.push(inviter._id);
+        await inviter.save();
+      }
     }
 
     await user.save();
 
-    console.log("User saved/updated:", user);
-
     return NextResponse.json({ success: true, user });
   } catch (error) {
-    console.error("Error in user API route:", error);
+    console.error("Failed to create/update user:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create/update user" },
       { status: 500 }

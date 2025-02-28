@@ -16,10 +16,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, Search, Send, Loader2 } from "lucide-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
-import { sendInvitation } from "../actions/sendInvitation";
 
 type SearchResult = {
   name: string;
@@ -70,30 +69,27 @@ export default function SearchPage() {
     const fullName = formData.get("fullName") as string;
 
     try {
-      // First, send the invitation email
-      const emailResult = await sendInvitation(formData);
-
-      if ("error" in emailResult) {
-        throw new Error(emailResult.error);
-      }
-
-      // If email sent successfully, store the invite in MongoDB
+      // Send the invitation
       const response = await fetch("/api/invite", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, fullName }),
+        body: JSON.stringify({
+          email,
+          fullName,
+          inviterEmail: user?.email,
+        }),
       });
 
       const data = await response.json();
-
+      console.log({ data });
       if (!data.success) {
-        throw new Error("Failed to store invite");
+        throw new Error(data.error || "Failed to send invite");
       }
 
       toast.success("Invitation Sent", {
-        description: `An invitation has been sent to ${email}`,
+        description: data?.message,
       });
       setShowInviteDialog(false);
     } catch (error) {
@@ -107,13 +103,10 @@ export default function SearchPage() {
   };
 
   const handleSendMoney = (recipient: string) => {
-    // This is where you would typically navigate to a send money page or open a modal
     console.log(`Sending money to: ${recipient}`);
     toast.success("Redirecting", {
       description: `You're being redirected to send money to ${recipient}`,
     });
-    // For now, we'll just show a toast. In a real app, you might navigate to a new page:
-    // router.push(`/send-money?recipient=${encodeURIComponent(recipient)}`)
   };
 
   if (isLoading) {
@@ -131,10 +124,7 @@ export default function SearchPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Status Bar */}
       <div className="h-8 bg-white"></div>
-
-      {/* Main Content */}
       <main className="flex-1 px-4 pt-4 pb-20">
         <div className="flex items-center mb-6">
           <Button variant="ghost" onClick={() => router.push("/home")}>
@@ -217,12 +207,11 @@ export default function SearchPage() {
         )}
       </main>
 
-      {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Invite User</DialogTitle>
-            <DialogDescription>Send an invitation to join SwiftPay to this user.</DialogDescription>
+            <DialogDescription>Send an invitation to join PrivyPay to this user.</DialogDescription>
           </DialogHeader>
           <form action={handleInvite}>
             <div className="grid gap-4 py-4">
@@ -265,7 +254,6 @@ export default function SearchPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
       <Toaster />
     </div>

@@ -5,18 +5,20 @@ import nodemailer from "nodemailer";
 
 const inviteSchema = z.object({
   email: z.string().email(),
+  fullName: z.string().min(1),
 });
 
 export async function sendInvitation(formData: FormData) {
   const validatedFields = inviteSchema.safeParse({
     email: formData.get("email"),
+    fullName: formData.get("fullName"),
   });
 
   if (!validatedFields.success) {
-    return { error: "Invalid email address" };
+    return { error: "Invalid email address or name" };
   }
 
-  const { email } = validatedFields.data;
+  const { email, fullName } = validatedFields.data;
 
   // In a real application, you would use your actual SMTP settings
   const transporter = nodemailer.createTransport({
@@ -35,18 +37,31 @@ export async function sendInvitation(formData: FormData) {
       subject: "Invitation to join PrivyPay",
       text: `You've been invited to join PrivyPay! Click here to sign up: ${process.env.NEXT_PUBLIC_APP_URL}/register`,
       html: `
-        <div class="container">
-        <h1>You're Invited to Join PrivyPay!</h1>
-        <p>Hi ${email},</p>
-        <p>We're excited to invite you to join PrivyPay, where you can send and receive money among friends.</p>
-        <p>Click the button below to get started:</p>
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="background-color: #4169E1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-          Join PrivyPay
-        </a>
-        <p>If you didn't request this invitation, you can safely ignore this email.</p>
-        <p>Best regards,</p>
-        <p>The PrivyPay Team</p>
-    </div>
+    <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Join PrivyPay</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <header style="background-color: #4169E1; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">PrivyPay</h1>
+          </header>
+          <main style="padding: 20px;">
+            <h2>You're invited to join PrivyPay!</h2>
+            <p>Hi ${fullName},</p>
+            <p>You've been invited to join PrivyPay, the easiest way to send and receive money.</p>
+            <p>Click the button below to create your account:</p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="display: inline-block; background-color: #4169E1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px;">
+              Join PrivyPay
+            </a>
+          </main>
+          <footer style="text-align: center; margin-top: 20px; font-size: 0.8em; color: #666;">
+            <p>If you didn't request this invitation, please ignore this email.</p>
+          </footer>
+        </body>
+        </html>
       `,
     });
 

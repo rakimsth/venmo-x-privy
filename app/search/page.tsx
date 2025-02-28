@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Mail, ArrowLeft, Search, Send, Loader2 } from "lucide-react";
+import { Mail, ArrowLeft, Search, Send, Loader2, Users, UserPlus } from "lucide-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
+import { toProperCase } from "@/utils/stringUtils";
 
 type SearchResult = {
+  id: string;
   name: string;
   email: string;
-  isRegistered: boolean;
+  walletAddress: string;
+  isFriend: boolean;
 };
 
 export default function SearchPage() {
@@ -34,7 +37,9 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
+  const [inviteFullName, setInviteFullName] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (query) {
@@ -42,18 +47,35 @@ export default function SearchPage() {
     }
   }, [query]);
 
-  const performSearch = (searchQuery: string) => {
-    // This is a mock search function. In a real application, you would call an API here.
-    const mockResults: SearchResult[] = [
-      { name: "John Doe", email: "john@example.com", isRegistered: true },
-      { name: "Jane Smith", email: "jane@example.com", isRegistered: true },
-      { name: "Alice Johnson", email: "alice@example.com", isRegistered: false },
-    ].filter(
-      (result) =>
-        result.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        result.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setSearchResults(mockResults);
+  const performSearch = async (searchQuery: string) => {
+    if (!user?.email) return;
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(searchQuery)}&currentUserEmail=${encodeURIComponent(
+          user.email
+        )}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        setSearchResults(
+          data.results.map((result: SearchResult) => ({
+            ...result,
+            name: toProperCase(result.name),
+          }))
+        );
+      } else {
+        throw new Error(data.error || "Failed to search users");
+      }
+    } catch (error) {
+      console.error("Error searching users:", error);
+      toast.error("Failed to search users", {
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSearch = () => {
@@ -64,49 +86,44 @@ export default function SearchPage() {
   };
 
   const handleInvite = async (formData: FormData) => {
-    setIsInviting(true);
-    const email = formData.get("email") as string;
-    const fullName = formData.get("fullName") as string;
+    startTransition(async () => {
+      try {
+        const email = formData.get("email") as string;
+        const fullName = toProperCase(formData.get("fullName") as string);
 
-    try {
-      // Send the invitation
-      const response = await fetch("/api/invite", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          fullName,
-          inviterEmail: user?.email,
-        }),
-      });
+        const response = await fetch("/api/invite", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            fullName,
+            inviterEmail: user?.email,
+          }),
+        });
 
-      const data = await response.json();
-      console.log({ data });
-      if (!data.success) {
-        throw new Error(data.error || "Failed to send invite");
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "Failed to send invite");
+        }
+
+        toast.success("Invitation Sent", {
+          description: `An invitation has been sent to ${email}`,
+        });
+        setShowInviteDialog(false);
+      } catch (error) {
+        console.error("Invitation failed:", error);
+        toast.error("Invitation Failed", {
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+        });
       }
-
-      toast.success("Invitation Sent", {
-        description: data?.message,
-      });
-      setShowInviteDialog(false);
-    } catch (error) {
-      console.error("Invitation failed:", error);
-      toast.error("Invitation Failed", {
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-      });
-    } finally {
-      setIsInviting(false);
-    }
+    });
   };
 
   const handleSendMoney = (recipient: string) => {
-    console.log(`Sending money to: ${recipient}`);
-    toast.success("Redirecting", {
-      description: `You're being redirected to send money to ${recipient}`,
-    });
+    router.push(`/transfers?recipient=${encodeURIComponent(recipient)}`);
   };
 
   if (isLoading) {
@@ -131,10 +148,10 @@ export default function SearchPage() {
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-semibold ml-2">Search Results</h1>
+          <h1 className="text-2xl font-semibold ml-2">Search</h1>
         </div>
 
-        <div className="relative mb-6">
+        <div className="relative mb-2">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             className="pl-10 pr-10 py-6 bg-white rounded-full"
@@ -153,21 +170,42 @@ export default function SearchPage() {
           </Button>
         </div>
 
-        {searchResults.length > 0 ? (
+        <div className="flex justify-between mt-4 mb-6">
+          <Button
+            className="flex-1 mr-2 bg-[#4169E1] hover:bg-[#3158D3] text-white"
+            onClick={() => router.push("/friends")}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Friends
+          </Button>
+          <Button
+            className="flex-1 ml-2 bg-[#4169E1] hover:bg-[#3158D3] text-white"
+            onClick={() => router.push("/invites")}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invites
+          </Button>
+        </div>
+
+        {isSearching ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4169E1]" />
+          </div>
+        ) : searchResults.length > 0 ? (
           <Card>
             <CardContent className="pt-6">
               <ul className="space-y-4">
-                {searchResults.map((result, index) => (
-                  <li key={index} className="flex items-center justify-between">
+                {searchResults.map((result) => (
+                  <li key={result.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold">{result.name}</p>
                       <p className="text-sm text-gray-500">{result.email}</p>
                     </div>
-                    {result.isRegistered ? (
+                    {result.isFriend ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleSendMoney(result.name)}
+                        onClick={() => handleSendMoney(result.walletAddress)}
                       >
                         <Send className="h-4 w-4 mr-2" />
                         Send Money
@@ -178,6 +216,7 @@ export default function SearchPage() {
                         size="sm"
                         onClick={() => {
                           setInviteEmail(result.email);
+                          setInviteFullName(result.name);
                           setShowInviteDialog(true);
                         }}
                       >
@@ -196,12 +235,13 @@ export default function SearchPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setInviteEmail(query);
+                setInviteEmail("");
+                setInviteFullName(toProperCase(query));
                 setShowInviteDialog(true);
               }}
             >
               <Mail className="h-4 w-4 mr-2" />
-              Invite {query}
+              Invite {toProperCase(query)}
             </Button>
           </div>
         )}
@@ -211,7 +251,7 @@ export default function SearchPage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Invite User</DialogTitle>
-            <DialogDescription>Send an invitation to join PrivyPay to this user.</DialogDescription>
+            <DialogDescription>Send an invitation to join SwiftPay to this user.</DialogDescription>
           </DialogHeader>
           <form action={handleInvite}>
             <div className="grid gap-4 py-4">
@@ -233,14 +273,15 @@ export default function SearchPage() {
                 <Input
                   id="invite-fullName"
                   name="fullName"
+                  defaultValue={inviteFullName}
                   placeholder="John Doe"
                   className="col-span-3"
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isInviting}>
-                {isInviting ? (
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Sending...

@@ -24,14 +24,53 @@ import {
 import { ArrowLeft, Send } from "lucide-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { toast, Toaster } from "sonner";
-import { parseUnits } from "viem";
+import { parseUnits, encodeFunctionData } from "viem";
 
 const tokens = [
-  { symbol: "ETH", name: "Ethereum", chainId: 1, decimals: 18 },
-  { symbol: "USDC", name: "USD Coin", chainId: 1, decimals: 6 },
-  { symbol: "SepoliaETH", name: "Sepolia Ethereum", chainId: 11155111, decimals: 18 },
-  { symbol: "SepoliaUSDC", name: "Sepolia USD Coin", chainId: 11155111, decimals: 6 },
+  {
+    symbol: "ETH",
+    name: "Ethereum",
+    chainId: 1,
+    decimals: 18,
+    isNative: true,
+  },
+  {
+    symbol: "USDC",
+    name: "USD Coin",
+    chainId: 1,
+    decimals: 6,
+    isNative: false,
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  },
+  {
+    symbol: "SepoliaETH",
+    name: "Sepolia Ethereum",
+    chainId: 11155111,
+    decimals: 18,
+    isNative: true,
+  },
+  {
+    symbol: "SepoliaUSDC",
+    name: "Sepolia USD Coin",
+    chainId: 11155111,
+    decimals: 6,
+    isNative: false,
+    address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  },
 ];
+
+const erc20Abi = [
+  {
+    name: "transfer",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "recipient", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
 
 export default function TransfersPage() {
   const router = useRouter();
@@ -58,17 +97,30 @@ export default function TransfersPage() {
 
       const amountInSmallestUnit = parseUnits(amount, selectedToken.decimals);
 
-      const txHash = await sendTransaction({
-        to: recipient,
-        value: amount, //amountInSmallestUnit,
-        chainId: selectedToken.chainId,
-      });
+      let txHash;
+      if (selectedToken.isNative) {
+        txHash = await sendTransaction({
+          to: recipient,
+          value: amountInSmallestUnit,
+          chainId: selectedToken.chainId,
+        });
+      } else {
+        const data = encodeFunctionData({
+          abi: erc20Abi,
+          functionName: "transfer",
+          args: [recipient, amountInSmallestUnit],
+        });
 
+        txHash = await sendTransaction({
+          to: selectedToken.address,
+          data,
+          chainId: selectedToken.chainId,
+        });
+      }
       toast.success("Transfer initiated", {
-        description: `Transaction hash: ${txHash}`,
+        description: `Transaction hash: ${txHash.hash}`,
       });
 
-      // Reset form
       setRecipient("");
       setAmount("");
     } catch (error) {
@@ -81,10 +133,7 @@ export default function TransfersPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Status Bar */}
       <div className="h-8 bg-white"></div>
-
-      {/* Main Content */}
       <main className="flex-1 px-4 pt-4 pb-20">
         <div className="flex items-center mb-6">
           <Button variant="ghost" onClick={() => router.push("/home")}>
@@ -161,8 +210,6 @@ export default function TransfersPage() {
           </CardFooter>
         </Card>
       </main>
-
-      {/* Bottom Navigation */}
       <BottomNavigation />
       <Toaster />
     </div>

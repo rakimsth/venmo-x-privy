@@ -8,6 +8,10 @@ This project was initiated in response to the Global Hackathon organized by Enco
 
 Build a Venmo-style app where users can send and receive payments in USDC, leveraging Privy wallets to manage stablecoins seamlessly. The app could also use Bridge’s API to allow users to easily convert fiat USD into USDC, enabling on-chain transactions without complex wallet setup or external exchanges.
 
+## Demo Video
+
+[![Watch the video](./images/home.png)](https://youtu.be/LDaHz0yoaGU?si=7oaA0GFniH0t5xBv)
+
 ## Features
 
 ### 1. User Authentication

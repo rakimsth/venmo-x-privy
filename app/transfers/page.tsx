@@ -24,7 +24,7 @@ import {
 import { ArrowLeft, Send } from "lucide-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { toast, Toaster } from "sonner";
-import { parseUnits, encodeFunctionData } from "viem";
+import { parseUnits, encodeFunctionData, formatUnits } from "viem";
 
 const tokens = [
   {
@@ -132,6 +132,25 @@ export default function TransfersPage() {
           data,
           chainId: selectedToken.chainId,
         });
+      }
+
+      // Store transaction in the database
+      const response = await fetch("/api/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: embeddedWallet.address,
+          to: recipient,
+          amount: formatUnits(amountInSmallestUnit, selectedToken.decimals),
+          token: selectedToken.symbol,
+          hash: txHash,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to store transaction");
       }
 
       toast.success("Transfer initiated", {

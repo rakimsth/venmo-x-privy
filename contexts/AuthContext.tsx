@@ -26,6 +26,7 @@ type AuthContextType = {
     wallet?: {
       address: string;
     };
+    clientType?: string;
   } | null;
 };
 
@@ -128,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ? {
           id: user.id,
           email: user?.email?.address,
+          clientType: user?.wallet?.walletClientType,
           wallet: user.wallet ? { address: user.wallet.address } : undefined,
         }
       : null,

@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Copy, Send } from "lucide-react";
+import { LogOut, Copy, Send, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { toast, Toaster } from "sonner";
@@ -17,12 +17,26 @@ type Friend = {
   walletAddress: string;
 };
 
+type Transaction = {
+  id: string;
+  from: string;
+  to: string;
+  fromName: string;
+  toName: string;
+  amount: string;
+  token: string;
+  hash: string;
+  timestamp: string;
+};
+
 export default function ProfilePage() {
   const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   const [copySuccess, setCopySuccess] = useState("");
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -46,8 +60,32 @@ export default function ProfilePage() {
       }
     };
 
+    const fetchTransactions = async () => {
+      if (user?.email) {
+        try {
+          const response = await fetch(
+            `/api/transactions?userEmail=${encodeURIComponent(user.email)}`
+          );
+          const data = await response.json();
+          if (data.success) {
+            setTransactions(data.transactions);
+          } else {
+            throw new Error(data.error || "Failed to fetch transactions");
+          }
+        } catch (error) {
+          console.error("Error fetching transactions:", error);
+          toast.error("Failed to load transactions", {
+            description: error instanceof Error ? error.message : "An unknown error occurred",
+          });
+        } finally {
+          setIsLoadingTransactions(false);
+        }
+      }
+    };
+
     if (user) {
       fetchFriends();
+      fetchTransactions();
     }
   }, [user]);
 
@@ -89,9 +127,10 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-semibold mb-6 text-center">Profile</h1>
 
         <Tabs defaultValue="wallet" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
             <TabsTrigger value="friends">Friends</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
           </TabsList>
           <TabsContent value="wallet">
             <Card className="p-6 mb-6">
@@ -115,7 +154,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Connected With</p>
-                  <p className="font-semibold">{user.wallet?.walletClientType || "Unknown"}</p>
+                  <p className="font-semibold">{user?.clientType || "Unknown"}</p>
                 </div>
               </div>
             </Card>
@@ -150,12 +189,83 @@ export default function ProfilePage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-center text-gray-500">
-                    You haven&apos;t added any friends yet.
-                  </p>
+                  <p className="text-center text-gray-500">You haven't added any friends yet.</p>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+          <TabsContent value="transactions">
+            <div className="space-y-4">
+              {isLoadingTransactions ? (
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4169E1]" />
+                </div>
+              ) : transactions.length > 0 ? (
+                transactions.map((transaction) => (
+                  <Card key={transaction.id} className="w-full">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div
+                            className={`p-2 rounded-full ${
+                              transaction.from === user.wallet?.address
+                                ? "bg-red-100"
+                                : "bg-green-100"
+                            }`}
+                          >
+                            {transaction.from === user.wallet?.address ? (
+                              <ArrowUpRight className="h-6 w-6 text-red-600" />
+                            ) : (
+                              <ArrowDownLeft className="h-6 w-6 text-green-600" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold">
+                              {transaction.from === user.wallet?.address ? "Sent" : "Received"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(transaction.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">
+                            {transaction.amount} {transaction.token}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {transaction.from === user.wallet?.address ? "To: " : "From: "}
+                            {transaction.from === user.wallet?.address
+                              ? transaction.toName
+                              : transaction.fromName}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 break-all flex items-center justify-between">
+                        <span className="font-semibold">Tx Hash:</span>
+                        <div className="flex items-center">
+                          <span className="mr-2">
+                            {transaction.hash.slice(0, 6)}...{transaction.hash.slice(-4)}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(transaction.hash)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="p-6">
+                    <p className="text-center text-gray-500">No transactions found.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </main>

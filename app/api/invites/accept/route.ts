@@ -7,22 +7,33 @@ export async function POST(req: Request) {
 
   const { inviteId, userEmail } = await req.json();
 
+  if (!inviteId || !userEmail) {
+    return NextResponse.json(
+      { success: false, error: "Invite ID and user email are required" },
+      { status: 400 }
+    );
+  }
+
   try {
     const user = await User.findOne({ email: userEmail });
     if (!user) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const invite = user.invites.id(inviteId);
+    const invite = user.receivedInvites.id(inviteId);
     if (!invite) {
       return NextResponse.json({ success: false, error: "Invite not found" }, { status: 404 });
     }
 
+    if (invite.status !== "pending") {
+      return NextResponse.json({ success: false, error: "Invite is not pending" }, { status: 400 });
+    }
+
     invite.status = "accepted";
 
-    const inviter = await User.findOne({ "invites.email": user.email });
+    const inviter = await User.findOne({ email: invite.email });
     if (inviter) {
-      const inviterInvite = inviter.invites.find((inv) => inv.email === user.email);
+      const inviterInvite = inviter.sentInvites.find((inv: any) => inv.email === user.email);
       if (inviterInvite) {
         inviterInvite.status = "accepted";
       }

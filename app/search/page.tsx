@@ -91,6 +91,10 @@ export default function SearchPage() {
         const email = formData.get("email") as string;
         const fullName = toProperCase(formData.get("fullName") as string);
 
+        if (!user?.email) {
+          throw new Error("User email not found");
+        }
+
         const response = await fetch("/api/invite", {
           method: "POST",
           headers: {
@@ -99,7 +103,7 @@ export default function SearchPage() {
           body: JSON.stringify({
             email,
             fullName,
-            inviterEmail: user?.email,
+            inviterEmail: user.email,
           }),
         });
 
@@ -251,7 +255,7 @@ export default function SearchPage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Invite User</DialogTitle>
-            <DialogDescription>Send an invitation to join SwiftPay to this user.</DialogDescription>
+            <DialogDescription>Send an invitation to join PrivyPay to this user.</DialogDescription>
           </DialogHeader>
           <form action={handleInvite}>
             <div className="grid gap-4 py-4">

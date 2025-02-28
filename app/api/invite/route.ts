@@ -8,6 +8,13 @@ export async function POST(req: Request) {
 
   const { email, fullName, inviterEmail } = await req.json();
 
+  if (!email || !fullName || !inviterEmail) {
+    return NextResponse.json(
+      { success: false, error: "Email, full name, and inviter email are required" },
+      { status: 400 }
+    );
+  }
+
   try {
     // Find the inviter
     const inviter = await User.findOne({ email: inviterEmail });
@@ -16,31 +23,66 @@ export async function POST(req: Request) {
     }
 
     // Check if the invited user already exists
-    const invitedUser = await User.findOne({ email });
+    let invitedUser = await User.findOne({ email });
 
     if (invitedUser) {
-      // If the user exists, add them as a friend if not already
-      if (!inviter.friends.includes(invitedUser._id)) {
-        inviter.friends.push(invitedUser._id);
-        invitedUser.friends.push(inviter._id);
-        await Promise.all([inviter.save(), invitedUser.save()]);
+      // Check if they are already friends
+      if (inviter.friends.includes(invitedUser._id)) {
+        return NextResponse.json({
+          success: false,
+          error: "User is already a friend",
+        });
       }
-      return NextResponse.json({
-        success: true,
-        message: "User already exists and added as friend",
+
+      // Create an invite
+      const newInvite = {
+        email: invitedUser.email,
+        fullName: invitedUser.fullName,
+        status: "pending",
+        invitedAt: new Date(),
+      };
+
+      // Add to inviter's sentInvites
+      inviter.sentInvites.push(newInvite);
+      await inviter.save();
+
+      // Add to invited user's receivedInvites
+      invitedUser.receivedInvites.push({
+        email: inviter.email,
+        fullName: inviter.fullName,
+        status: "pending",
+        invitedAt: new Date(),
       });
+      await invitedUser.save();
+    } else {
+      // Create a new user with minimal information
+      invitedUser = new User({
+        email,
+        fullName,
+        privyWalletAddress: "", // This will be set when the user actually signs up
+      });
+
+      // Create an invite
+      const newInvite = {
+        email: inviter.email,
+        fullName: inviter.fullName,
+        status: "pending",
+        invitedAt: new Date(),
+      };
+
+      // Add to inviter's sentInvites
+      inviter.sentInvites.push({
+        email,
+        fullName,
+        status: "pending",
+        invitedAt: new Date(),
+      });
+      await inviter.save();
+
+      // Add to new user's receivedInvites
+      invitedUser.receivedInvites.push(newInvite);
+      await invitedUser.save();
     }
-
-    // If the user doesn't exist, create an invite
-    const newInvite = {
-      email,
-      fullName,
-      status: "pending",
-      invitedAt: new Date(),
-    };
-
-    inviter.invites.push(newInvite);
-    await inviter.save();
 
     // Send invitation email
     const formData = new FormData();

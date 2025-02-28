@@ -20,6 +20,7 @@ export async function GET(request: Request) {
         ? {
             email: user.email,
             fullName: user.fullName,
+            privyWalletAddress: user.privyWalletAddress,
             hasFullName: !!user.fullName,
           }
         : null,

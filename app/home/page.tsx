@@ -9,6 +9,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { toast } from "sonner";
+import { Toaster } from "sonner";
 import { cards } from "@/constants/home";
 
 export default function HomePage() {
@@ -66,7 +68,9 @@ export default function HomePage() {
             variant="ghost"
             size="icon"
             className="absolute right-2 top-1/2 transform -translate-y-1/2"
-            onClick={handleSearch}
+            onClick={() =>
+              toast.info("Work in progress", { description: "QR code functionality coming soon!" })
+            }
           >
             <QrCode className="h-5 w-5 text-gray-400" />
           </Button>
@@ -117,6 +121,7 @@ export default function HomePage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+      <Toaster />
     </div>
   );
 }

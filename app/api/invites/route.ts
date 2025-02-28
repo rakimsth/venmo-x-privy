@@ -18,15 +18,29 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const invites = user.invites.map((invite: any) => ({
+    const receivedInvites = user.receivedInvites.map((invite: any) => ({
       id: invite._id.toString(),
       email: invite.email,
       fullName: invite.fullName,
       status: invite.status,
       invitedAt: invite.invitedAt,
+      type: "received",
     }));
 
-    return NextResponse.json({ success: true, invites });
+    const sentInvites = user.sentInvites.map((invite: any) => ({
+      id: invite._id.toString(),
+      email: invite.email,
+      fullName: invite.fullName,
+      status: invite.status,
+      invitedAt: invite.invitedAt,
+      type: "sent",
+    }));
+
+    return NextResponse.json({
+      success: true,
+      receivedInvites,
+      sentInvites,
+    });
   } catch (error) {
     console.error("Error fetching invites:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch invites" }, { status: 500 });

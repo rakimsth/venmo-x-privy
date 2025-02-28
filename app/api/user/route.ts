@@ -13,19 +13,32 @@ export async function POST(req: Request) {
     if (!user) {
       user = new User({ email, fullName, privyWalletAddress });
     } else {
+      // Update user information
       user.fullName = fullName;
-      user.privyWalletAddress = privyWalletAddress;
+
+      // Only update privyWalletAddress if it's provided and different from the existing one
+      if (privyWalletAddress && privyWalletAddress !== user.privyWalletAddress) {
+        user.privyWalletAddress = privyWalletAddress;
+      }
     }
 
-    // Check for pending invites and accept them
-    const inviters = await User.find({ "invites.email": email, "invites.status": "pending" });
-    for (const inviter of inviters) {
-      const invite = inviter.invites.find((inv) => inv.email === email && inv.status === "pending");
-      if (invite) {
+    // Check for pending received invites and accept them
+    for (const invite of user.receivedInvites) {
+      if (invite.status === "pending") {
         invite.status = "accepted";
-        inviter.friends.push(user._id);
-        user.friends.push(inviter._id);
-        await inviter.save();
+        const inviter = await User.findOne({ email: invite.email });
+        if (inviter) {
+          if (!inviter.friends.includes(user._id)) {
+            inviter.friends.push(user._id);
+            user.friends.push(inviter._id);
+          }
+          // Update the corresponding sent invite
+          const sentInvite = inviter.sentInvites.find((sent: any) => sent.email === user.email);
+          if (sentInvite) {
+            sentInvite.status = "accepted";
+          }
+          await inviter.save();
+        }
       }
     }
 

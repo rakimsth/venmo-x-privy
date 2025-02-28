@@ -58,15 +58,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error("Failed to update user in database");
         }
 
-        const data = await response.json();
-        console.log("User updated in database:", data);
+        await response.json();
       } catch (error) {
         console.error("Error updating user in database:", error);
       }
     }
   }, []);
 
-  const checkUserFullName = useCallback(async (userEmail: string) => {
+  const checkUserData = useCallback(async (userEmail: string) => {
     if (!userEmail) return null;
 
     setIsCheckingUser(true);
@@ -74,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`/api/user/check?email=${encodeURIComponent(userEmail)}`);
       const data = await response.json();
 
-      if (!data.success || !data.user || !data.user.fullName) {
+      if (!data.success || !data.user || !data.user.fullName || !data.user.privyWalletAddress) {
         setShowNamePrompt(true);
         return null;
       }
@@ -108,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (authenticated && user) {
         const checkAndUpdateUser = async () => {
           if (user?.email?.address) {
-            const existingUser = await checkUserFullName(user?.email?.address);
+            const existingUser = await checkUserData(user?.email?.address);
             if (!existingUser || !existingUser.fullName || !existingUser.privyWalletAddress) {
               // Only update if we don't have all the required information
               await updateUserInDatabase(user);
@@ -118,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkAndUpdateUser();
       }
     }
-  }, [ready, authenticated, user, checkUserFullName, updateUserInDatabase]);
+  }, [ready, authenticated, user, checkUserData, updateUserInDatabase]);
 
   const authContextValue: AuthContextType = {
     isLoading,

@@ -1,23 +1,23 @@
 import mongoose from "mongoose";
 
+const InviteSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  fullName: { type: String, required: true },
+  status: { type: String, enum: ["pending", "accepted", "declined"], default: "pending" },
+  invitedAt: { type: Date, default: Date.now },
+});
+
 const UserSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true },
     email: { type: String, required: true, unique: true, index: true },
     privyWalletAddress: {
       type: String,
-      required: true,
       unique: true,
     },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    invites: [
-      {
-        email: { type: String, required: true },
-        fullName: { type: String, required: true },
-        status: { type: String, enum: ["pending", "accepted", "declined"], default: "pending" },
-        invitedAt: { type: Date, default: Date.now },
-      },
-    ],
+    receivedInvites: [InviteSchema],
+    sentInvites: [InviteSchema],
     createdAt: { type: Date, default: Date.now },
     lastLoginAt: { type: Date, default: Date.now },
   },

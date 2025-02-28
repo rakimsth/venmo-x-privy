@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { usePrivy, PrivyProvider } from "@privy-io/react-auth";
 
 type AuthContextType = {
@@ -24,11 +24,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (ready) {
-      setIsLoading(false);
+  const updateUserInDatabase = useCallback(async (user: any) => {
+    if (user && user.wallet) {
+      try {
+        const response = await fetch("/api/user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: user.email,
+            fullName: user.name || "Unknown",
+            privyWalletAddress: user.wallet.address,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update user in database");
+        }
+
+        const data = await response.json();
+        console.log("User updated in database:", data);
+      } catch (error) {
+        console.error("Error updating user in database:", error);
+      }
     }
-  }, [ready]);
+  }, []);
+
+  useEffect(() => {
+    const handleUserAuthentication = async () => {
+      if (ready) {
+        setIsLoading(false);
+        if (authenticated && user) {
+          console.log("User authenticated:", user);
+          await updateUserInDatabase(user);
+        }
+      }
+    };
+
+    handleUserAuthentication();
+  }, [ready, authenticated, user, updateUserInDatabase]);
 
   const authContextValue: AuthContextType = {
     isLoading,

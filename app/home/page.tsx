@@ -5,7 +5,7 @@ import { Search, QrCode } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
 import { BottomNavigation } from "@/components/BottomNavigation";

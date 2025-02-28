@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, Search, Send, Loader2 } from "lucide-react";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
 import { sendInvitation } from "../actions/sendInvitation";
@@ -36,6 +36,7 @@ export default function SearchPage() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
     if (query) {
@@ -65,20 +66,45 @@ export default function SearchPage() {
   };
 
   const handleInvite = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await sendInvitation(formData);
+    setIsInviting(true);
+    const email = formData.get("email") as string;
+    const fullName = formData.get("fullName") as string;
 
-      if ("error" in result) {
-        toast.error("Invitation Failed", {
-          description: result.error,
-        });
-      } else {
-        toast.success("Invitation Sent", {
-          description: `An invitation has been sent to ${formData.get("email")}`,
-        });
-        setShowInviteDialog(false);
+    try {
+      // First, send the invitation email
+      const emailResult = await sendInvitation(formData);
+
+      if ("error" in emailResult) {
+        throw new Error(emailResult.error);
       }
-    });
+
+      // If email sent successfully, store the invite in MongoDB
+      const response = await fetch("/api/invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, fullName }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error("Failed to store invite");
+      }
+
+      toast.success("Invitation Sent", {
+        description: `An invitation has been sent to ${email}`,
+      });
+      setShowInviteDialog(false);
+    } catch (error) {
+      console.error("Invitation failed:", error);
+      toast.error("Invitation Failed", {
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const handleSendMoney = (recipient: string) => {
@@ -126,7 +152,7 @@ export default function SearchPage() {
             placeholder="Search People, Business, & Charities"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyUp={(e) => e.key === "Enter" && handleSearch()}
+            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
           />
           <Button
             variant="ghost"
@@ -197,7 +223,7 @@ export default function SearchPage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Invite User</DialogTitle>
-            <DialogDescription>Send an invitation to join PrivyPay to this user.</DialogDescription>
+            <DialogDescription>Send an invitation to join SwiftPay to this user.</DialogDescription>
           </DialogHeader>
           <form action={handleInvite}>
             <div className="grid gap-4 py-4">
@@ -212,10 +238,21 @@ export default function SearchPage() {
                   className="col-span-3"
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="invite-fullName" className="text-right">
+                  Full Name
+                </Label>
+                <Input
+                  id="invite-fullName"
+                  name="fullName"
+                  placeholder="John Doe"
+                  className="col-span-3"
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? (
+              <Button type="submit" disabled={isInviting}>
+                {isInviting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Sending...

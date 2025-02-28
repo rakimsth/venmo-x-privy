@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Wallet } from "lucide-react";
-import { useAuth } from "./contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
   const { isLoggedIn, login, isLoading } = useAuth();
@@ -29,17 +29,11 @@ export default function Home() {
       <div className="w-full max-w-[320px] space-y-8">
         <div className="space-y-2 text-center">
           <h1 className="text-4xl font-bold text-[#4169E1]">PrivyPay</h1>
-          <p className="text-lg text-muted-foreground">
-            Your Wallet&apos;s Best Friend
-          </p>
+          <p className="text-lg text-muted-foreground">Your Wallet&apos;s Best Friend</p>
         </div>
 
         <div className="space-y-4">
-          <Button
-            className="w-full bg-[#4169E1] hover:bg-[#3158D3]"
-            size="lg"
-            onClick={login}
-          >
+          <Button className="w-full bg-[#4169E1] hover:bg-[#3158D3]" size="lg" onClick={login}>
             <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
           </Button>
           <p className="text-center text-sm text-muted-foreground">

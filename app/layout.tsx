@@ -3,7 +3,7 @@ import "./globals.css";
 import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { PrivyAuthProvider } from "./contexts/AuthContext";
+import { PrivyAuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });

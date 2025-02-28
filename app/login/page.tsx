@@ -1,32 +1,32 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ArrowLeft } from "lucide-react"
-import { useAuth } from "../contexts/AuthContext"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const { login, isLoading } = useAuth()
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { login, isLoading } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
-      await login(email, password)
-      router.push("/")
+      await login(email, password);
+      router.push("/");
     } catch (error) {
-      console.error("Login failed", error)
+      console.error("Login failed", error);
       // Handle login error (e.g., show error message)
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-white p-4">
@@ -39,7 +39,9 @@ export default function Login() {
       <div className="mx-auto w-full max-w-[320px] space-y-8">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">Enter your email and password to login to your account</p>
+          <p className="text-sm text-muted-foreground">
+            Enter your email and password to login to your account
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -64,7 +66,12 @@ export default function Login() {
               required
             />
           </div>
-          <Button className="w-full bg-[#4169E1] hover:bg-[#3158D3]" size="lg" type="submit" disabled={isLoading}>
+          <Button
+            className="w-full bg-[#4169E1] hover:bg-[#3158D3]"
+            size="lg"
+            type="submit"
+            disabled={isLoading}
+          >
             {isLoading ? "Logging in..." : "Log in"}
           </Button>
         </form>
@@ -76,6 +83,5 @@ export default function Login() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

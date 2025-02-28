@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,6 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [isPending, startTransition] = useTransition();
   const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {

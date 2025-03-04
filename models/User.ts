@@ -13,7 +13,6 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, index: true },
     privyWalletAddress: {
       type: String,
-      unique: true,
     },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     receivedInvites: [InviteSchema],
